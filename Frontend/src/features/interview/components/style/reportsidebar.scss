@@ -1,0 +1,149 @@
+.report-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 340px;
+  height: 100vh;
+  background: #10141d;
+  border-right: 1px solid rgba(255,255,255,.08);
+
+  transform: translateX(-100%);
+  transition: .35s ease;
+
+  z-index: 1000;
+
+  display: flex;
+  flex-direction: column;
+
+  box-shadow: 20px 0 40px rgba(0,0,0,.45);
+}
+
+.report-sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+
+  background: rgba(0,0,0,.55);
+
+  backdrop-filter: blur(2px);
+
+  z-index: 999;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 22px;
+
+  border-bottom: 1px solid rgba(255,255,255,.08);
+
+  h2 {
+    color: white;
+    font-size: 20px;
+    font-weight: 600;
+  }
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+
+  color: white;
+
+  cursor: pointer;
+
+  font-size: 22px;
+
+  transition: .2s;
+}
+
+.close-btn:hover {
+  color: #ec4899;
+}
+
+.sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+
+  padding: 18px;
+}
+
+.sidebar-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-body::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.15);
+  border-radius: 20px;
+}
+
+.report-card {
+  background: #171c29;
+
+  border: 1px solid rgba(255,255,255,.06);
+
+  border-radius: 14px;
+
+  padding: 16px;
+
+  margin-bottom: 16px;
+
+  cursor: pointer;
+
+  transition: .25s;
+}
+
+.report-card:hover {
+  transform: translateY(-3px);
+
+  border-color: rgba(236,72,153,.4);
+
+  box-shadow: 0 12px 30px rgba(0,0,0,.3);
+}
+
+.report-card h3 {
+  color: white;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.date {
+  color: #9ba3af;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.score {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  color: #9ba3af;
+  font-size: 13px;
+}
+
+.score span {
+  color: #34d399;
+  font-weight: 700;
+
+  background: rgba(52,211,153,.15);
+
+  padding: 5px 10px;
+
+  border-radius: 50px;
+}
+
+.empty-state {
+  height: 100%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  color: #9ba3af;
+}
