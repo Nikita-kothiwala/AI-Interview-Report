@@ -7,6 +7,12 @@ import otpModel from "../models/otp.model.js";
 import { generateOTP, hashOTP } from "../utils/otp.js";
 import { sendVerificationEmail } from "../services/email.service.js";
 import { createAndSendVerificationOTP } from "../services/otp.service.js";
+import { createAuthSession} from "../services/auth.service.js";
+import { refreshCookieOptions} from "../config/cookie.config.js";
+import refreshTokenModel from "../models/refreshToken.model.js";
+import { generateAccessToken, generateRefreshToken, hashRefreshToken} from "../utils/token.js";
+
+
 /**
  @name registerUser
  @description Register a new user , expects username, email, and password in the request body
@@ -348,41 +354,253 @@ async function resendOTP(req, res) {
  */
 
 async function loginUser(req, res) {
-    const { email, password } = req.body;
+    try {
 
-    if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
-    }
+        const { email, password } = req.body;
 
-    const isUserExist = await userModel.findOne({ email });
-
-    if (!isUserExist) {
-        return res.status(400).json({ message: "Invalid email or password" });
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, isUserExist.password);
-
-    if (!isPasswordValid) {
-        return res.status(400).json({ message: "Invalid email or password" });
-    }
-
-    const token = jwt.sign({
-        id: isUserExist._id,
-        username: isUserExist.username,
-    }, process.env.JWT_SECRET_KEY, { expiresIn: "1d" });
-
-    res.cookie("token", token);
-
-    res.status(200).json({
-        message: "User logged in successfully",
-        user: {
-            id: isUserExist._id,
-            username: isUserExist.username,
-            email: isUserExist.email
+        if (!email || !password) {
+            return res.status(400).json({
+                message: "Email and password are required"
+            });
         }
-    });
 
+        const normalizedEmail = email
+            .trim()
+            .toLowerCase();
+
+        const user = await userModel
+            .findOne({
+                email: normalizedEmail
+            })
+            .select("+password");
+
+        if (!user) {
+            return res.status(401).json({
+                message: "Invalid email or password"
+            });
+        }
+
+        if (!user.isActive) {
+            return res.status(403).json({
+                message: "Your account has been disabled"
+            });
+        }
+
+        if (!user.emailVerified) {
+            return res.status(403).json({
+                message:
+                    "Please verify your email before logging in"
+            });
+        }
+
+        const isPasswordValid =
+            await bcrypt.compare(
+                password,
+                user.password
+            );
+
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                message: "Invalid email or password"
+            });
+        }
+
+        user.lastLoginAt = new Date();
+
+        await user.save();
+
+        const {
+            accessToken,
+            refreshToken
+        } = await createAuthSession(
+            user,
+            req
+        );
+
+        res.cookie(
+            "refreshToken",
+            refreshToken,
+            refreshCookieOptions
+        );
+
+        return res.status(200).json({
+            message: "Login successful",
+
+            accessToken,
+
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                emailVerified: user.emailVerified
+            }
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Error logging in user:",
+            error
+        );
+
+        return res.status(500).json({
+            message: "Internal server error"
+        });
+    }
 }
+
+
+/**
+ * @name refreshToken
+ * @description Refresh a token
+ * @route POST /api/auth/refresh-token
+ * @access Public
+ */
+
+async function refreshAccessToken(req, res) {
+    try {
+
+        const refreshToken =
+            req.cookies.refreshToken;
+
+        if (!refreshToken) {
+            return res.status(401).json({
+                message: "Refresh token not found"
+            });
+        }
+
+        const tokenHash =
+            hashRefreshToken(refreshToken);
+
+        const storedToken =
+            await refreshTokenModel.findOne({
+                tokenHash
+            });
+
+        if (!storedToken) {
+            return res.status(401).json({
+                message: "Invalid refresh token"
+            });
+        }
+
+        if (storedToken.revokedAt) {
+
+            // Reuse detection
+            await refreshTokenModel.updateMany(
+                {
+                    tokenFamily:
+                        storedToken.tokenFamily,
+                    revokedAt: null
+                },
+                {
+                    $set: {
+                        revokedAt: new Date()
+                    }
+                }
+            );
+
+            res.clearCookie(
+                "refreshToken",
+                refreshCookieOptions
+            );
+
+            return res.status(401).json({
+                message:
+                    "Refresh token reuse detected. Please login again."
+            });
+        }
+
+        if (
+            storedToken.expiresAt < new Date()
+        ) {
+
+            return res.status(401).json({
+                message:
+                    "Refresh token has expired"
+            });
+        }
+
+        const user =
+            await userModel.findById(
+                storedToken.userId
+            );
+
+        if (!user || !user.isActive) {
+
+            return res.status(401).json({
+                message:
+                    "User account is not available"
+            });
+        }
+
+        const newAccessToken =
+            generateAccessToken(user);
+
+        const newRefreshToken =
+            generateRefreshToken();
+
+        const newRefreshTokenHash =
+            hashRefreshToken(
+                newRefreshToken
+            );
+
+        const newExpiresAt = new Date(
+            Date.now() +
+            7 * 24 * 60 * 60 * 1000
+        );
+
+        await refreshTokenModel.create({
+            userId: user._id,
+
+            tokenHash:
+                newRefreshTokenHash,
+
+            tokenFamily:
+                storedToken.tokenFamily,
+
+            expiresAt:
+                newExpiresAt,
+
+            createdByIp: req.ip,
+
+            userAgent:
+                req.get("user-agent")
+        });
+
+        storedToken.revokedAt =
+            new Date();
+
+        storedToken.replacedByTokenHash =
+            newRefreshTokenHash;
+
+        await storedToken.save();
+
+        res.cookie(
+            "refreshToken",
+            newRefreshToken,
+            refreshCookieOptions
+        );
+
+        return res.status(200).json({
+            accessToken:
+                newAccessToken
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Refresh token error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Unable to refresh access token"
+        });
+    }
+}
+
+
 
 /**
  * @name logoutUser
@@ -392,24 +610,51 @@ async function loginUser(req, res) {
  */
 async function logoutUser(req, res) {
     try {
-        const token = req.cookies.token;
 
-        if (!token) {
-            return res.status(400).json({ message: "No token found" });
+        const refreshToken =
+            req.cookies.refreshToken;
+
+        if (refreshToken) {
+
+            const tokenHash =
+                hashRefreshToken(
+                    refreshToken
+                );
+
+            await refreshTokenModel.updateOne(
+                {
+                    tokenHash,
+                    revokedAt: null
+                },
+                {
+                    $set: {
+                        revokedAt: new Date()
+                    }
+                }
+            );
         }
 
-        if (token) {
-            await blacklistModel.create({ token });
-        }
+        res.clearCookie(
+            "refreshToken",
+            refreshCookieOptions
+        );
 
-        res.clearCookie("token");
-        res.status(200).json({ message: "User logged out successfully" });
+        return res.status(200).json({
+            message:
+                "User logged out successfully"
+        });
+
     } catch (error) {
-        console.error("Error logging out user:", error);
-        res.status(500).json({ message: "Internal server error" });
+
+        console.error(
+            "Logout error:",
+            error
+        );
+
+        return res.status(500).json({
+            message: "Internal server error"
+        });
     }
-
-
 }
 
 
@@ -446,4 +691,4 @@ async function getMe(req, res) {
     }
 }
 
-export default { registerUser, loginUser, logoutUser, getMe, verifyEmail, resendOTP };
+export default { registerUser, loginUser, logoutUser, getMe, verifyEmail, resendOTP , refreshAccessToken};

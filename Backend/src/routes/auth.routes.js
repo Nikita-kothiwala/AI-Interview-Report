@@ -1,7 +1,7 @@
 import Router from "express"
 import authController from "../controller/auth.controller.js"
 import { authUser } from "../middlewares/auth.middleware.js"
-import {verifyEmailLimiter,resendOTPLimiter} from "../middlewares/rateLimit.middleware.js";
+import {verifyEmailLimiter,resendOTPLimiter, loginLimiter} from "../middlewares/rateLimit.middleware.js";
 const router = Router()
 
 /** 
@@ -31,8 +31,14 @@ router.post( "/resend-otp", resendOTPLimiter, authController.resendOTP);
  * @access Public
  */
 
- router.post("/login",authController.loginUser)
+ router.post("/login",loginLimiter,authController.loginUser)
 
+/**
+ * @Route POST /api/auth/refresh
+ * @description Refresh a token
+ * @access Public
+ */
+ router.post( "/refresh",authController.refreshAccessToken);
 
  /**
   * @Route POST /api/auth/logout
@@ -40,7 +46,7 @@ router.post( "/resend-otp", resendOTPLimiter, authController.resendOTP);
   * @access Public  
   */
 
- router.get("/logout",authController.logoutUser)
+ router.post("/logout",authController.logoutUser)
 
 
  /** 

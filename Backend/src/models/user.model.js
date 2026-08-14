@@ -6,23 +6,21 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: [true, "Username is required"],
             unique: true,
-            trim: true,
-            minlength: 3,
-            maxlength: 30
+            trim: true
         },
 
         email: {
             type: String,
             required: [true, "Email is required"],
             unique: true,
-            trim: true,
-            lowercase: true
+            lowercase: true,
+            trim: true
         },
 
         password: {
             type: String,
             required: [true, "Password is required"],
-            minlength: 8
+            select: false
         },
 
         emailVerified: {
@@ -33,6 +31,11 @@ const userSchema = new mongoose.Schema(
         isActive: {
             type: Boolean,
             default: true
+        },
+
+        lastLoginAt: {
+            type: Date,
+            default: null
         }
     },
     {

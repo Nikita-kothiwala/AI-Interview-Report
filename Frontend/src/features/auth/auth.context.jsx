@@ -1,34 +1,65 @@
-import { createContext,useState , useEffect} from "react";
-import { getMe } from "./services/auth.api.js";
+import {createContext,useState,useEffect} from "react";
+import {getMe,refreshToken} from "./services/auth.api.js";
+import {setAccessToken} from "./services/api.js";
 
-export const AuthContext = createContext()
+export const AuthContext = createContext();
 
-export const AuthProvider = ({children}) =>{
+export const AuthProvider = ({ children }) => {
 
-    const [user, setUser] = useState(null)
-    const [loading , setLoading] = useState(true)
+        const [user, setUser] =
+            useState(null);
 
-    useEffect(() => {
-    const getAndSetUser = async () => {
-        try {
-            const data = await getMe();
+        const [loading, setLoading] =
+            useState(true);
 
-            if (data) {
-                setUser(data.user);
-            }
-        } catch (err) {
-            console.log(err);
-        } finally {
-            setLoading(false);
-        }
+        useEffect(() => {
+
+            const restoreSession =
+                async () => {
+
+                    try {
+
+                        const data = await refreshToken();
+
+                        setAccessToken(
+                            data.accessToken
+                        );
+
+                        const userData =
+                            await getMe();
+
+                        setUser(
+                            userData.user
+                        );
+
+                    } catch (error) {
+
+                        console.log(
+                            "No active session"
+                        );
+
+                        setUser(null);
+
+                    } finally {
+
+                        setLoading(false);
+                    }
+                };
+
+            restoreSession();
+
+        }, []);
+
+        return (
+            <AuthContext.Provider
+                value={{
+                    user,
+                    setUser,
+                    loading,
+                    setLoading
+                }}
+            >
+                {children}
+            </AuthContext.Provider>
+        );
     };
-
-    getAndSetUser();
-}, []);
-
-    return(
-        <AuthContext.Provider value={{user, setUser, loading, setLoading}} >
-          {children}
-        </AuthContext.Provider>
-    )
-}

@@ -1,57 +1,74 @@
-import { useContext } from "react";
-import { AuthContext } from "../auth.context.jsx"
-import { login, register, logout, getMe } from "../services/auth.api.js";
-import { useNavigate } from "react-router";
+import {
+    useDispatch,
+    useSelector
+} from "react-redux";
+
+import {
+    loginUser,
+    logoutUser,
+    registerUser
+} from "../authThunks.js";
+
 
 export const useAuth = () => {
-  const navigate = useNavigate()
 
-  const context = useContext(AuthContext)
-  const { user, setUser, loading, setLoading } = context
+    const dispatch = useDispatch();
 
-  const handleLogin = async ({ email, password }) => {
-    setLoading(true)
-    try {
-      const data = await login({ email, password })
-      setUser(data.user)
-         navigate("/")
+    const {
+        user,
+        loading,
+        initialized,
+        error
+    } = useSelector(
+        (state) => state.auth
+    );
 
-    } catch (error) {
-      console.log(error)
 
-    } finally {
-       console.log("Finally executed");
-      setLoading(false)
-    }
+    const handleLogin = async ({
+        email,
+        password
+    }) => {
 
-  }
+        return dispatch(
+            loginUser({
+                email,
+                password
+            })
+        );
+    };
 
-  const handleRegister = async ({ username, email, password }) => {
-    setLoading(true)
-    try {
-      const data = await register({ username, email, password })
-      setUser(data.user)
-    } catch (error) {
-      console.log(error)
-    } finally {
-      setLoading(false)
-    }
 
-  }
+    const handleRegister = async ({
+        username,
+        email,
+        password
+    }) => {
 
-  const handleLogout = async () => {
-    setLoading(true)
-    try {
-      const data = await logout()
-      setUser(null)
-    } catch (error) {
-      console.log(error)
-    } finally {
-      setLoading(false)
-    }
+        return dispatch(
+            registerUser({
+                username,
+                email,
+                password
+            })
+        );
+    };
 
-  }
 
-  return { user, loading, handleLogin, handleLogout, handleRegister }
+    const handleLogout = async () => {
 
-}
+        return dispatch(
+            logoutUser()
+        );
+    };
+
+
+    return {
+        user,
+        loading,
+        initialized,
+        error,
+        handleLogin,
+        handleRegister,
+        handleLogout
+    };
+};

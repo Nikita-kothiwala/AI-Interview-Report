@@ -1,24 +1,38 @@
-import React from 'react'
-import { useAuth } from '../hooks/useAuth.js'
-import { useNavigate } from 'react-router'
-import { Navigate } from 'react-router'
+import React from "react";
+import { Navigate } from "react-router";
+import { useAuth } from "../hooks/useAuth.js";
 
-const Protected = ({children}) => {
 
-    const {loading, user} = useAuth()
-    const navigate = useNavigate()
+const Protected = ({ children }) => {
 
-    if(loading){
-        return (<main>
-            <h1>Loading........</h1>
-        </main>)
+    const {
+        user,
+        initialized
+    } = useAuth();
+
+
+    if (!initialized) {
+
+        return (
+            <main>
+                <h1>Loading...</h1>
+            </main>
+        );
     }
 
-    if(!user){
-        return <Navigate to={"/login"}/>
+
+    if (!user) {
+
+        return (
+            <Navigate
+                to="/login"
+                replace
+            />
+        );
     }
 
-  return children
-}
 
-export default Protected
+    return children;
+};
+
+export default Protected;

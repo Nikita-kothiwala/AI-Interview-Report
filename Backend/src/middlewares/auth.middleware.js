@@ -1,34 +1,53 @@
 import jwt from "jsonwebtoken";
-import blacklistModel from "../models/blacklist.model.js";
 
-export async function authUser(req,res,next){
-    const token = req.cookies.token;
+export function authUser(req, res, next) {
 
-    if(!token){
-        return res.status(401).json({message:"Unauthorized access, Token not found"});
-    }
+    const authHeader =
+        req.headers.authorization;
 
-   const isTokenBlackListed = await blacklistModel.findOne({
-        token
-    })
-
-    if(isTokenBlackListed){
+    if (
+        !authHeader ||
+        !authHeader.startsWith("Bearer ")
+    ) {
         return res.status(401).json({
-            message:"Token is invalid because of blacklisting"
-        })
+            message: "Access token required"
+        });
     }
 
- try{
-      const decoded = jwt.verify(token,process.env.JWT_SECRET_KEY)
-      req.user = decoded
-      next()
- }catch(error){
-    console.log(error)
-   return res.status(401).json({
-    message:"Invalid Token"
-   })
- }
+    const accessToken =
+        authHeader.split(" ")[1];
 
-   
+    try {
+
+        const decoded = jwt.verify(
+            accessToken,
+            process.env.ACCESS_TOKEN_SECRET,
+            {
+                issuer: "ai-interview-api",
+                audience: "ai-interview-client"
+            }
+        );
+
+        req.user = {
+            id: decoded.sub,
+            username: decoded.username
+        };
+
+        next();
+
+    } catch (error) {
+
+        if (
+            error.name ===
+            "TokenExpiredError"
+        ) {
+            return res.status(401).json({
+                message: "Access token expired"
+            });
+        }
+
+        return res.status(401).json({
+            message: "Invalid access token"
+        });
+    }
 }
-
