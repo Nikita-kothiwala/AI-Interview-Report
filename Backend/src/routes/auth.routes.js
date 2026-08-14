@@ -1,7 +1,7 @@
 import Router from "express"
 import authController from "../controller/auth.controller.js"
 import { authUser } from "../middlewares/auth.middleware.js"
-
+import {verifyEmailLimiter,resendOTPLimiter} from "../middlewares/rateLimit.middleware.js";
 const router = Router()
 
 /** 
@@ -10,6 +10,19 @@ const router = Router()
 @access Public
 **/
 router.post("/register",authController.registerUser)
+
+/** 
+ @Route POST /api/auth/verify-email
+ @description Verify email of registered user
+@access Public
+**/
+router.post("/verify-email",verifyEmailLimiter,authController.verifyEmail);
+
+/**
+ * @route POST /api/auth/resend-otp
+ * @description to resend otp
+ */
+router.post( "/resend-otp", resendOTPLimiter, authController.resendOTP);
 
 
 /**

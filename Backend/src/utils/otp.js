@@ -1,0 +1,12 @@
+import crypto from "crypto";
+
+export function generateOTP() {
+    return crypto.randomInt(100000, 1000000).toString();
+}
+
+export function hashOTP(otp) {
+    return crypto
+        .createHash("sha256")
+        .update(`${otp}${process.env.OTP_SECRET}`)
+        .digest("hex");
+}
