@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "../auth.form.scss";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth.js";
-import {loginUser} from "../authThunks.js";
+import { loginUser } from "../authThunks.js";
 import "/src/style.scss"
 const Login = () => {
 
@@ -107,6 +107,11 @@ const Login = () => {
 
                     </div>
 
+                    <p>
+                        <Link to="/forgot-password">
+                            Forgot Password?
+                        </Link>
+                    </p>
 
                     <button
                         className="button primary-button"

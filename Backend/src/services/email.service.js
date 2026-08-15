@@ -53,3 +53,56 @@ export async function sendVerificationEmail(email, otp) {
         `
     });
 }
+
+export async function sendPasswordResetOTP(
+    email,
+    otp
+) {
+
+    await transporter.sendMail({
+
+        from:
+            `"AI Interview" <${process.env.SMTP_USER}>`,
+
+        to: email,
+
+        subject:
+            "Password Reset OTP - AI Interview",
+
+        text:
+            `Your password reset OTP is ${otp}. ` +
+            `It expires in 10 minutes.`,
+
+        html: `
+            <div style="font-family: Arial, sans-serif;">
+
+                <h2>
+                    Password Reset
+                </h2>
+
+                <p>
+                    We received a request to reset
+                    your AI Interview account password.
+                </p>
+
+                <p>
+                    Your OTP is:
+                </p>
+
+                <h1>
+                    ${otp}
+                </h1>
+
+                <p>
+                    This OTP expires in 10 minutes.
+                </p>
+
+                <p>
+                    If you did not request a password reset,
+                    you can safely ignore this email.
+                </p>
+
+            </div>
+        `
+    });
+}

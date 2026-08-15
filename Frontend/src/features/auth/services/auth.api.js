@@ -105,3 +105,61 @@ export async function resendOTP({ email }) {
         throw error;
     }
 }
+
+export async function forgotPassword({ email }) {
+
+    try {
+
+        const response =
+            await api.post(
+                "/api/auth/forgot-password",
+                {
+                    email
+                }
+            );
+
+        return response.data;
+
+    } catch (error) {
+
+        console.error(
+            "Forgot password error:",
+            error.response?.data ||
+            error.message
+        );
+
+        throw error;
+    }
+}
+
+export async function resetPassword({
+    email,
+    otp,
+    newPassword
+}) {
+
+    try {
+
+        const response =
+            await api.post(
+                "/api/auth/reset-password",
+                {
+                    email,
+                    otp,
+                    newPassword
+                }
+            );
+
+        return response.data;
+
+    } catch (error) {
+
+        console.error(
+            "Reset password error:",
+            error.response?.data ||
+            error.message
+        );
+
+        throw error;
+    }
+}

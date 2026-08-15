@@ -4,13 +4,13 @@ import jwt from "jsonwebtoken"
 import cookieParser from "cookie-parser"
 import blacklistModel from "../models/blacklist.model.js"
 import otpModel from "../models/otp.model.js";
-import { generateOTP, hashOTP } from "../utils/otp.js";
-import { sendVerificationEmail } from "../services/email.service.js";
+import {createOTP,hashOTP} from "../utils/otp.js";
+import { sendVerificationEmail, sendPasswordResetOTP } from "../services/email.service.js";
 import { createAndSendVerificationOTP } from "../services/otp.service.js";
-import { createAuthSession} from "../services/auth.service.js";
-import { refreshCookieOptions} from "../config/cookie.config.js";
+import { createAuthSession } from "../services/auth.service.js";
+import { refreshCookieOptions } from "../config/cookie.config.js";
 import refreshTokenModel from "../models/refreshToken.model.js";
-import { generateAccessToken, generateRefreshToken, hashRefreshToken} from "../utils/token.js";
+import { generateAccessToken, generateRefreshToken, hashRefreshToken } from "../utils/token.js";
 
 
 /**
@@ -691,4 +691,216 @@ async function getMe(req, res) {
     }
 }
 
-export default { registerUser, loginUser, logoutUser, getMe, verifyEmail, resendOTP , refreshAccessToken};
+
+/**
+ * @name ForgotPassword
+ * @description forgot password
+ * @route POST /api/auth/forgot-password
+ */
+async function forgotPassword(req, res) {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                message: "Email is required"
+            });
+        }
+
+        const normalizedEmail =
+            email.trim().toLowerCase();
+
+        const user = await userModel.findOne({
+            email: normalizedEmail
+        });
+
+        // Prevent account enumeration
+        if (!user) {
+            return res.status(200).json({
+                message:
+                    "If an account exists with this email, a password reset OTP has been sent."
+            });
+        }
+
+        const {
+            otp,
+            otpHash,
+            otpExpiresAt
+        } = createOTP();
+
+        user.passwordResetOTPHash =
+            otpHash;
+
+        user.passwordResetOTPExpiresAt =
+            otpExpiresAt;
+
+        user.passwordResetOTPAttempts =
+            0;
+
+        user.passwordResetOTPLastSentAt =
+            new Date();
+
+        await user.save();
+
+        await sendPasswordResetOTP(
+            user.email,
+            otp
+        );
+
+        return res.status(200).json({
+            message:
+                "If an account exists with this email, a password reset OTP has been sent."
+        });
+
+    } catch (error) {
+        console.error(
+            "Forgot password error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Internal server error"
+        });
+    }
+}
+
+/**
+ * @name ResetPassword
+ * @description Resetting password
+ * @route POST /api/auth/reset-password
+ */
+async function resetPassword(req, res) {
+    try {
+        const {
+            email,
+            otp,
+            newPassword
+        } = req.body;
+
+        if (
+            !email ||
+            !otp ||
+            !newPassword
+        ) {
+            return res.status(400).json({
+                message:
+                    "Email, OTP and new password are required"
+            });
+        }
+
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                message:
+                    "Password must be at least 8 characters long"
+            });
+        }
+
+        const normalizedEmail =
+            email.trim().toLowerCase();
+
+        const user =
+            await userModel
+                .findOne({
+                    email: normalizedEmail
+                })
+                .select("+password");
+
+        if (!user) {
+            return res.status(400).json({
+                message:
+                    "Invalid password reset request"
+            });
+        }
+
+        if (
+            user.passwordResetOTPAttempts >= 5
+        ) {
+            return res.status(429).json({
+                message:
+                    "Too many incorrect attempts. Please request a new OTP."
+            });
+        }
+
+        if (
+            !user.passwordResetOTPHash ||
+            !user.passwordResetOTPExpiresAt
+        ) {
+            return res.status(400).json({
+                message:
+                    "No password reset OTP found. Please request a new OTP."
+            });
+        }
+
+        if (
+            user.passwordResetOTPExpiresAt <
+            new Date()
+        ) {
+            return res.status(400).json({
+                message:
+                    "OTP has expired. Please request a new OTP."
+            });
+        }
+
+        const submittedOTPHash =
+            hashOTP(otp);
+
+        if (
+            submittedOTPHash !==
+            user.passwordResetOTPHash
+        ) {
+            user.passwordResetOTPAttempts += 1;
+
+            await user.save();
+
+            return res.status(400).json({
+                message:
+                    "Invalid OTP"
+            });
+        }
+
+        const passwordHash =
+            await bcrypt.hash(
+                newPassword,
+                12
+            );
+
+        user.password =
+            passwordHash;
+
+        user.passwordResetOTPHash =
+            null;
+
+        user.passwordResetOTPExpiresAt =
+            null;
+
+        user.passwordResetOTPAttempts =
+            0;
+
+        user.passwordResetOTPLastSentAt =
+            null;
+
+        await user.save();
+
+        // Revoke existing refresh-token sessions here
+        // using your existing refresh-token model/service.
+
+        return res.status(200).json({
+            message:
+                "Password reset successfully. Please login again."
+        });
+
+    } catch (error) {
+        console.error(
+            "Reset password error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Internal server error"
+        });
+    }
+}
+
+export default { registerUser, loginUser, logoutUser, getMe, verifyEmail, resendOTP, refreshAccessToken, forgotPassword, resetPassword };
