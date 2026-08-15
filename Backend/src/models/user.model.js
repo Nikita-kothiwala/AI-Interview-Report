@@ -36,6 +36,25 @@ const userSchema = new mongoose.Schema(
         lastLoginAt: {
             type: Date,
             default: null
+        },
+        passwordResetOTPHash: {
+            type: String,
+            default: null
+        },
+
+        passwordResetOTPExpiresAt: {
+            type: Date,
+            default: null
+        },
+
+        passwordResetOTPAttempts: {
+            type: Number,
+            default: 0
+        },
+
+        passwordResetOTPLastSentAt: {
+            type: Date,
+            default: null
         }
     },
     {

@@ -1,5 +1,5 @@
 import otpModel from "../models/otp.model.js";
-import { generateOTP, hashOTP } from "../utils/otp.js";
+import { createOTP, hashOTP } from "../utils/otp.js";
 import { sendVerificationEmail } from "./email.service.js";
 
 export async function createAndSendVerificationOTP(user) {

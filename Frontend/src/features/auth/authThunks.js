@@ -2,18 +2,8 @@ import {
     createAsyncThunk
 } from "@reduxjs/toolkit";
 
-import {
-    login,
-    register,
-    logout,
-    refreshToken,
-    getMe
-} from "./services/auth.api.js";
-
-import {
-    setAccessToken,
-    clearAccessToken
-} from "./services/api.js";
+import { login, register, logout, refreshToken, getMe} from "./services/auth.api.js";
+import {setAccessToken,clearAccessToken} from "./services/api.js";
 
 
 export const loginUser = createAsyncThunk(
