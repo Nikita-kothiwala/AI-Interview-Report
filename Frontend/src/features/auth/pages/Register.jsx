@@ -3,10 +3,11 @@ import "../auth.form.scss"
 import { useNavigate, Link } from 'react-router'
 import { useAuth } from '../hooks/useAuth.js'
 import "/src/style.scss"
+import ErrorMessage from "../components/ErrorMessage.jsx";
 
 const Register = () => {
     const navigate = useNavigate()
-    const { loading, handleRegister } = useAuth()
+    const { loading, handleRegister , error} = useAuth()
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [username, setUsername] = useState("")
@@ -44,7 +45,8 @@ const Register = () => {
         <main>
             <div className="form-container">
                 <h1>Register</h1>
-
+                
+                <ErrorMessage message={error} />
                 <form onSubmit={handleSubmit}>
                     <div className="input-group">
                         <label htmlFor='username'>Username</label>

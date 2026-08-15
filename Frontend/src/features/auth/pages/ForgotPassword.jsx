@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { forgotPassword } from "../services/auth.api.js";
 import "../auth.form.scss";
-
+import ErrorMessage from "../components/ErrorMessage.jsx";
 
 const ForgotPassword = () => {
 
@@ -126,11 +126,7 @@ const ForgotPassword = () => {
                     </div>
 
 
-                    {error && (
-                        <p className="error">
-                            {error}
-                        </p>
-                    )}
+                  <ErrorMessage message={error} />
 
 
                     {success && (

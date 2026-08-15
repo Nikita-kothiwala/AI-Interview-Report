@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth.js";
 import { loginUser } from "../authThunks.js";
 import "/src/style.scss"
+import ErrorMessage from "../components/ErrorMessage.jsx";
 const Login = () => {
 
     const navigate = useNavigate();
@@ -55,11 +56,7 @@ const Login = () => {
 
                 <h1>LOGIN</h1>
 
-                {error && (
-                    <p className="error">
-                        {error}
-                    </p>
-                )}
+                <ErrorMessage message={error} />
 
 
                 <form

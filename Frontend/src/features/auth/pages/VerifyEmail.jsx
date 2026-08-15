@@ -1,7 +1,7 @@
 import React, { useEffect,useState} from "react";
 import { useLocation, useNavigate} from "react-router";
 import {verifyEmail, resendOTP} from "../services/auth.api.js";
-
+import ErrorMessage from "../components/ErrorMessage.jsx";
 
 const VerifyEmail = () => {
 
@@ -244,11 +244,7 @@ const VerifyEmail = () => {
                     </div>
 
 
-                    {error && (
-                        <p className="error">
-                            {error}
-                        </p>
-                    )}
+                   <ErrorMessage message={error} />
 
 
                     {success && (
