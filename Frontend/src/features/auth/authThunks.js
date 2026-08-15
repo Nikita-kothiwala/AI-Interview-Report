@@ -4,6 +4,7 @@ import {
 
 import { login, register, logout, refreshToken, getMe} from "./services/auth.api.js";
 import {setAccessToken,clearAccessToken} from "./services/api.js";
+import {getApiErrorMessage} from "./services/apiError.js";
 
 
 export const loginUser = createAsyncThunk(
@@ -21,6 +22,13 @@ export const loginUser = createAsyncThunk(
                 password
             });
 
+            if (!data.accessToken) {
+
+                return rejectWithValue(
+                    "Access token was not received."
+                );
+            }
+
             setAccessToken(
                 data.accessToken
             );
@@ -30,8 +38,7 @@ export const loginUser = createAsyncThunk(
         } catch (error) {
 
             return rejectWithValue(
-                error.response?.data?.message ||
-                "Login failed"
+                getApiErrorMessage(error)
             );
         }
     }
@@ -56,8 +63,7 @@ export const logoutUser = createAsyncThunk(
             clearAccessToken();
 
             return rejectWithValue(
-                error.response?.data?.message ||
-                "Logout failed"
+                getApiErrorMessage(error)
             );
         }
     }
@@ -88,7 +94,7 @@ export const restoreSession = createAsyncThunk(
             clearAccessToken();
 
             return rejectWithValue(
-                "No active session"
+                getApiErrorMessage(error)
             );
         }
     }
@@ -116,8 +122,7 @@ export const registerUser = createAsyncThunk(
         } catch (error) {
 
             return rejectWithValue(
-                error.response?.data?.message ||
-                "Registration failed"
+                getApiErrorMessage(error)
             );
         }
     }

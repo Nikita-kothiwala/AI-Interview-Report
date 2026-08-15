@@ -1,21 +1,8 @@
-import React, {
-    useEffect,
-    useState
-} from "react";
-
-import {
-    Link,
-    useLocation,
-    useNavigate
-} from "react-router";
-
-import {
-    resetPassword,
-    forgotPassword
-} from "../services/auth.api.js";
-
+import React, {useEffect,useState} from "react";
+import {Link,useLocation,useNavigate} from "react-router";
+import {resetPassword,forgotPassword} from "../services/auth.api.js";
 import "../auth.form.scss";
-
+import ErrorMessage from "../components/ErrorMessage.jsx";
 
 const ResetPassword = () => {
 
@@ -480,13 +467,7 @@ const ResetPassword = () => {
 
                     {/* ================= ERROR ================= */}
 
-                    {error && (
-
-                        <p className="error">
-                            {error}
-                        </p>
-
-                    )}
+                   <ErrorMessage message={error} />
 
 
                     {/* ================= SUCCESS ================= */}
