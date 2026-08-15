@@ -63,10 +63,7 @@ router.post( "/resend-otp", resendOTPLimiter, authController.resendOTP);
   * @access Public
   */
 
-  router.post(
-    "/forgot-password",
-    authController.forgotPassword
-);
+  router.post( "/forgot-password", authController.forgotPassword);
 
  /** 
   * @Route GET /api/auth/reset-password
@@ -74,9 +71,6 @@ router.post( "/resend-otp", resendOTPLimiter, authController.resendOTP);
   * @access Public
   */
 
-router.post(
-    "/reset-password",
-    authController.resetPassword
-);
+router.post("/reset-password",authController.resetPassword);
 
 export default router

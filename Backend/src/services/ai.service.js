@@ -46,82 +46,42 @@ const interviewReportSchema = z.object({
 
 async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
 
-    const prompt = `You are an interview report generator.
+    const prompt = `
+You are an expert technical interviewer and interview report generator.
 
-You MUST return JSON ONLY.
+Analyze the candidate's resume, self description, and job description.
 
-Rules:
+Generate a structured interview assessment.
 
-- Do not rename any field.
-- Every field is mandatory.
-- Never omit any field.
-- technicalQuestions must contain exactly 5 objects.
-- behaviourQuestions must contain exactly 5 objects.
-- skillGaps must contain at least 3 objects.
-- preparationPlan must contain exactly 7 objects.
-- Every technical question object must contain:
-  - question
-  - intention
-  - answer
+IMPORTANT:
 
-- Every behavioural question object must contain:
-  - question
-  - intention
-  - answer
+1. technicalQuestions must contain exactly 5 objects.
+2. Each technicalQuestions object MUST contain:
+   - question
+   - intention
+   - answer
 
-- Every preparationPlan object must contain:
-  - day
-  - focus
-  - tasks
+3. behaviourQuestions must contain exactly 5 objects.
+4. Each behaviourQuestions object MUST contain:
+   - question
+   - intention
+   - answer
 
-- title is mandatory.
+5. skillGaps must contain exactly 3 objects.
+6. Each skillGaps object MUST contain:
+   - skills
+   - severity
 
-Return EXACTLY this JSON structure.
+7. preparationPlan must contain exactly 7 objects.
+8. Each preparationPlan object MUST contain:
+   - day
+   - focus
+   - tasks
 
-{
-  "title": "",
-  "matchScore": 0,
-  "technicalQuestions": [
-    {
-      "question": "",
-      "intention": "",
-      "answer": ""
-    }
-  ],
-  "behaviourQuestions": [
-    {
-      "question": "",
-      "intention": "",
-      "answer": ""
-    }
-  ],
-  "skillGaps": [
-    {
-      "skills": "",
-      "severity": "low"
-    }
-  ],
-  "preparationPlan": [
-    {
-      "day": 1,
-      "focus": "",
-      "tasks": [
-        "",
-        ""
-      ]
-    }
-  ]
-}
-
-Rules:
-- matchScore must be an integer from 0-100.
-- technicalQuestions must contain exactly 5 objects.
-- behaviourQuestions must contain exactly 5 objects.
-- skillGaps must contain exactly 3 objects.
-- preparationPlan must contain exactly 7 objects.
-- Never return strings like "question:" or "intention:".
-- Each question must be an object.
-- Return only JSON.
+9. matchScore must be an integer between 0 and 100.
+10. title must contain the job title.
+11. Do NOT put labels such as "question:", "answer:", "intention:", "skills:", "focus:", or "day:" inside values.
+12. Return only the structured JSON matching the provided schema.
 
 Candidate Resume:
 ${resume}
@@ -131,12 +91,7 @@ ${selfDescription}
 
 Job Description:
 ${jobDescription}
-
-Return only valid JSON.
-
-Return valid JSON only.
-Do not wrap in markdown.
-`
+`;
 
 
     const response = await ai.models.generateContent({
@@ -144,17 +99,135 @@ Do not wrap in markdown.
         contents: prompt,
         config: {
             responseMimeType: "application/json",
-            responseSchema: zodToJsonSchema(interviewReportSchema)
+
+            responseSchema: {
+                type: Type.OBJECT,
+
+                properties: {
+                    title: {
+                        type: Type.STRING
+                    },
+
+                    matchScore: {
+                        type: Type.INTEGER
+                    },
+
+                    technicalQuestions: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                question: {
+                                    type: Type.STRING
+                                },
+                                intention: {
+                                    type: Type.STRING
+                                },
+                                answer: {
+                                    type: Type.STRING
+                                }
+                            },
+                            required: [
+                                "question",
+                                "intention",
+                                "answer"
+                            ]
+                        }
+                    },
+
+                    behaviourQuestions: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                question: {
+                                    type: Type.STRING
+                                },
+                                intention: {
+                                    type: Type.STRING
+                                },
+                                answer: {
+                                    type: Type.STRING
+                                }
+                            },
+                            required: [
+                                "question",
+                                "intention",
+                                "answer"
+                            ]
+                        }
+                    },
+
+                    skillGaps: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                skills: {
+                                    type: Type.STRING
+                                },
+                                severity: {
+                                    type: Type.STRING,
+                                    enum: [
+                                        "low",
+                                        "medium",
+                                        "high"
+                                    ]
+                                }
+                            },
+                            required: [
+                                "skills",
+                                "severity"
+                            ]
+                        }
+                    },
+
+                    preparationPlan: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                day: {
+                                    type: Type.INTEGER
+                                },
+                                focus: {
+                                    type: Type.STRING
+                                },
+                                tasks: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.STRING
+                                    }
+                                }
+                            },
+                            required: [
+                                "day",
+                                "focus",
+                                "tasks"
+                            ]
+                        }
+                    }
+                },
+
+                required: [
+                    "title",
+                    "matchScore",
+                    "technicalQuestions",
+                    "behaviourQuestions",
+                    "skillGaps",
+                    "preparationPlan"
+                ]
+            }
         }
     })
 
 
     return JSON.parse(response.text)
-   
 
-    
 
-  
+
+
+
 }
 
 
@@ -192,10 +265,10 @@ async function generatePdfFromHtml(htmlContent) {
 
     const pdfBuffer = await page.pdf({
         format: "A4",
-        margin:{
-            top:"20mm",
-            bottom:"20mm",
-            left : "15mm",
+        margin: {
+            top: "20mm",
+            bottom: "20mm",
+            left: "15mm",
             right: "15mm"
         }
     });
@@ -220,7 +293,7 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
 
     const response = await ai.models.generateContent({
         model: "gemini-3.1-flash-lite",
-         contents: prompt,
+        contents: prompt,
         config: {
             responseMimeType: "application/json",
             responseSchema: zodToJsonSchema(resumeSchema)
